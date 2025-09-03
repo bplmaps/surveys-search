@@ -34,13 +34,44 @@ const auctionData = d3.csv(
 const data = d3.merge([masonData, bellamyData, auctionData])
 ```
 
+```js
+function download(a) {
+
+  console.log(a)
+}
+```
 ### 🔎 Enter a search term
+
+<div class="grid grid-cols-2">
 
 ```js
 const search = view(Inputs.search(data, {
   placeholder: "Search a city, street, name, etc."
 }));
 ```
+
+```js
+const csv = d3.csvFormat(selected);
+
+function downloadFile(content, filename, mimeType = "text/plain") {
+  const blob = new Blob([content], { type: mimeType });
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement("a");
+  a.href = url;
+  a.download = filename;
+  a.click();
+  URL.revokeObjectURL(url);
+}
+
+const button = view(
+  Inputs.button(`Download ${selected.length} records as CSV`, {
+    value: null,
+    reduce: () => downloadFile(csv, `selection-${new Date().toISOString().slice(0,10)}.csv`, "text/csv")
+  })
+);
+```
+
+</div>
 
 <div class="grid grid-cols-1" style="grid-auto-rows: 300px;" width="640">
   <div id="map" style="padding: 0;">
