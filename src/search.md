@@ -13,21 +13,18 @@ toc: false
 ```js
 import L from "leaflet";
 import "leaflet.markercluster";
+import _ from "lodash";
 ```
 
 ```js
 const masonData = d3.csv(
   "https://raw.githubusercontent.com/bplmaps/lmec-digital-library-metadata/main/survey-data/mason.csv"
 )
-```
 
-```js
 const bellamyData = d3.csv(
   "https://raw.githubusercontent.com/bplmaps/lmec-digital-library-metadata/main/survey-data/Bellamy.csv"
 )
-```
 
-```js
 const auctionData = d3.csv(
   "https://raw.githubusercontent.com/bplmaps/lmec-digital-library-metadata/refs/heads/main/survey-data/auction-lot.csv"
 )
@@ -37,12 +34,7 @@ const auctionData = d3.csv(
 const data = d3.merge([masonData, bellamyData, auctionData])
 ```
 
-## 🔎 Enter a search term
-
-```js
-import _ from "lodash"
-// import markerClusterGroup from "leaflet.markercluster"
-```
+### 🔎 Enter a search term
 
 ```js
 const search = view(Inputs.search(data, {
@@ -50,8 +42,13 @@ const search = view(Inputs.search(data, {
 }));
 ```
 
+<div class="grid grid-cols-1" style="grid-auto-rows: 300px;" width="640">
+  <div id="map" style="padding: 0">
+  </div>
+</div>
+
 ```js
-const table = view(Inputs.table(search, {
+const selected = view(Inputs.table(search, {
   columns: [
     "identifier",
     "city_town",
@@ -62,9 +59,7 @@ const table = view(Inputs.table(search, {
     "property_owner",
     "neighbors",
     "notes",
-    "background_notes",
     "surveyor",
-    "related_registry_doc",
     "link"
   ],
   header: {
@@ -77,27 +72,17 @@ const table = view(Inputs.table(search, {
     property_owner: "Property Owner",
     neighbors: "Neighbors",
     notes: "Notes",
-    background_notes: "Background Notes",
     surveyor: "Surveyor",
-    related_registry_doc: "Related registry documents",
     link: "Link"
   },
   width: {
-    streets: 50
+    // streets: 50
   }
 }))
 ```
 
-<div class="grid grid-cols-1" style="grid-auto-rows: 400px;" width="640">
-  <div class="card" id="map" style="padding: 0">
-  </div>
-</div>
-
 ```js
-const map = L.map("map").setView([42.3, -71.1], 13);
-```
-
-```js
+let map = L.map("map").setView([42.3, -71.1], 13);
 let osmLayer = L.tileLayer(
   "https://{s}.basemaps.cartocdn.com/light_all/{z}/{x}/{y}@2x.png",
   {
@@ -105,17 +90,20 @@ let osmLayer = L.tileLayer(
       '&copy; <a href="http://osm.org/copyright">OpenStreetMap</a> contributors'
   }
 ).addTo(map);
+```
 
+```js
 const markers = L.markerClusterGroup().addTo(map);
-
-let points = table.map((d) => {
+let points = selected.map((d) => {
   if (testCoord(d.latitude) && testCoord(d.longitude)) {
     L.marker([+d.latitude, +d.longitude])
       .bindPopup(popupParser(d))
       .addTo(markers);
   }
-});
+})
+```
 
+```js
 if (points.length > 0) {
   map.fitBounds(markers.getBounds(), { animate: true, duration: 1.75 });
 }
@@ -140,14 +128,13 @@ const aeonButton = (d) => {
   )}&ItemDate=${encodeURIComponent(d["date"])}&CallNumber=${encodeURIComponent(
     d["identifier"]
   )}&ItemCitation=${encodeURIComponent("Surveyor Collections Search Tool")}`;
-
   return `<a href=${link} target="_blank">Request this item</a>`;
 }
 ```
 
 ```js
 const popupParser = (d) => `
-  <div style="font-size:18px; line-height:1.4;">
+  <div style="font-size:14px; line-height:1.4;">
     <h2 style="margin:0; font-size:1.2em;">${d.identifier || "No data"}</h2><br>
     <p style="margin:0;"><strong>Date:</strong> ${
       d.date ? d.date : "No data"
@@ -172,88 +159,10 @@ const popupParser = (d) => `
 `
 ```
 
-<!-- A shared color scale for consistency, sorted by the number of launches -->
+<style>
 
-<!-- ```js
-const color = Plot.scale({
-  color: {
-    type: "categorical",
-    domain: d3.groupSort(launches, (D) => -D.length, (d) => d.state).filter((d) => d !== "Other"),
-    unknown: "var(--theme-foreground-muted)"
-  }
-});
-``` -->
-
-<!-- Cards with big numbers -->
-
-<!-- <div class="grid grid-cols-4">
-  <div class="card">
-    <h2>United States 🇺🇸</h2>
-    <span class="big">${launches.filter((d) => d.stateId === "US").length.toLocaleString("en-US")}</span>
-  </div>
-  <div class="card">
-    <h2>Russia 🇷🇺 <span class="muted">/ Soviet Union</span></h2>
-    <span class="big">${launches.filter((d) => d.stateId === "SU" || d.stateId === "RU").length.toLocaleString("en-US")}</span>
-  </div>
-  <div class="card">
-    <h2>China 🇨🇳</h2>
-    <span class="big">${launches.filter((d) => d.stateId === "CN").length.toLocaleString("en-US")}</span>
-  </div>
-  <div class="card">
-    <h2>Other</h2>
-    <span class="big">${launches.filter((d) => d.stateId !== "US" && d.stateId !== "SU" && d.stateId !== "RU" && d.stateId !== "CN").length.toLocaleString("en-US")}</span>
-  </div>
-</div> -->
-
-<!-- Plot of launch history -->
-
-<!-- ```js
-function launchTimeline(data, {width} = {}) {
-  return Plot.plot({
-    title: "Launches over the years",
-    width,
-    height: 300,
-    y: {grid: true, label: "Launches"},
-    color: {...color, legend: true},
-    marks: [
-      Plot.rectY(data, Plot.binX({y: "count"}, {x: "date", fill: "state", interval: "year", tip: true})),
-      Plot.ruleY([0])
-    ]
-  });
+#table {
+  overflow:true;
 }
-``` -->
 
-<!-- <div class="grid grid-cols-1">
-  <div class="card">
-    ${resize((width) => launchTimeline(launches, {width}))}
-  </div>
-</div> -->
-
-<!-- Plot of launch vehicles -->
-
-<!-- ```js
-function vehicleChart(data, {width}) {
-  return Plot.plot({
-    title: "Popular launch vehicles",
-    width,
-    height: 300,
-    marginTop: 0,
-    marginLeft: 50,
-    x: {grid: true, label: "Launches"},
-    y: {label: null},
-    color: {...color, legend: true},
-    marks: [
-      Plot.rectX(data, Plot.groupY({x: "count"}, {y: "family", fill: "state", tip: true, sort: {y: "-x"}})),
-      Plot.ruleX([0])
-    ]
-  });
-}
-``` -->
-
-<!-- <div class="grid grid-cols-1">
-  <div class="card">
-    ${resize((width) => vehicleChart(launches, {width}))}
-  </div>
-</div> -->
-
-<!-- Data: Jonathan C. McDowell, [General Catalog of Artificial Space Objects](https://planet4589.org/space/gcat) -->
+</style>
