@@ -43,7 +43,7 @@ const search = view(Inputs.search(data, {
 ```
 
 <div class="grid grid-cols-1" style="grid-auto-rows: 300px;" width="640">
-  <div id="map" style="padding: 0">
+  <div id="map" style="padding: 0;">
   </div>
 </div>
 
@@ -90,10 +90,11 @@ let osmLayer = L.tileLayer(
       '&copy; <a href="http://osm.org/copyright">OpenStreetMap</a> contributors'
   }
 ).addTo(map);
+const markers = L.markerClusterGroup();
 ```
 
 ```js
-const markers = L.markerClusterGroup().addTo(map);
+markers.clearLayers()
 let points = selected.map((d) => {
   if (testCoord(d.latitude) && testCoord(d.longitude)) {
     L.marker([+d.latitude, +d.longitude])
@@ -106,6 +107,7 @@ let points = selected.map((d) => {
 ```js
 if (points.length > 0) {
   map.fitBounds(markers.getBounds(), { animate: true, duration: 1.75 });
+  markers.addTo(map);
 }
 ```
 
@@ -158,11 +160,3 @@ const popupParser = (d) => `
   </div>
 `
 ```
-
-<style>
-
-#table {
-  overflow:true;
-}
-
-</style>
